@@ -27,7 +27,9 @@ public static class PathUtil
     /// The path with every symlinked folder along it resolved, the way git reports paths
     /// (on macOS, /var/... becomes /private/var/...). Parts that do not exist are kept as written.
     /// </summary>
-    public static string RealPath(string path)
+    public static string RealPath(string path) => RealPath(path, 0);
+
+    private static string RealPath(string path, int depth)
     {
         var full = Normalize(path);
         var root = Path.GetPathRoot(full);
@@ -40,7 +42,9 @@ public static class PathUtil
             current = Path.Combine(current, part);
             try
             {
-                if (Directory.ResolveLinkTarget(current, returnFinalTarget: true) is { } target) current = target.FullName;
+                // A link's target can itself sit behind another link, so resolve it too (bounded against loops).
+                if (Directory.ResolveLinkTarget(current, returnFinalTarget: true) is { } target)
+                    current = depth < 16 ? RealPath(target.FullName, depth + 1) : target.FullName;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
