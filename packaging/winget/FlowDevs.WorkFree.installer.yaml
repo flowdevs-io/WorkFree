@@ -1,0 +1,15 @@
+PackageIdentifier: FlowDevs.WorkFree
+PackageVersion: VERSION
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: workfree.exe
+    PortableCommandAlias: workfree
+  - RelativeFilePath: workfree-gui.exe
+    PortableCommandAlias: workfree-gui
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/flowdevs-io/WorkFree/releases/download/vVERSION/workfree-win-x64.zip
+    InstallerSha256: SHA256_WIN_X64
+ManifestType: installer
+ManifestVersion: 1.6.0

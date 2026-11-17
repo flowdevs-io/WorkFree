@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>workfree</id>
+    <version>VERSION</version>
+    <title>WorkFree</title>
+    <authors>FlowDevs</authors>
+    <owners>FlowDevs</owners>
+    <projectUrl>https://github.com/flowdevs-io/WorkFree</projectUrl>
+    <projectSourceUrl>https://github.com/flowdevs-io/WorkFree</projectSourceUrl>
+    <packageSourceUrl>https://github.com/flowdevs-io/WorkFree/tree/main/packaging/chocolatey</packageSourceUrl>
+    <bugTrackerUrl>https://github.com/flowdevs-io/WorkFree/issues</bugTrackerUrl>
+    <licenseUrl>https://github.com/flowdevs-io/WorkFree/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>git worktree cleanup disk cli tui</tags>
+    <summary>Find git worktrees, see how much disk they use, and clean them up.</summary>
+    <description>WorkFree scans your project folders for git worktrees, shows the size, last activity and uncommitted-change state of each, and removes the ones you no longer need. Includes an interactive terminal screen and scriptable commands. Requires git on PATH.</description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

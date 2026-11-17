@@ -1,0 +1,17 @@
+PackageIdentifier: FlowDevs.WorkFree
+PackageVersion: VERSION
+PackageLocale: en-US
+Publisher: FlowDevs
+PublisherUrl: https://github.com/flowdevs-io
+PackageName: WorkFree
+PackageUrl: https://github.com/flowdevs-io/WorkFree
+License: MIT
+LicenseUrl: https://github.com/flowdevs-io/WorkFree/blob/main/LICENSE
+ShortDescription: Find git worktrees, see how much disk they use, and clean them up.
+Tags:
+  - git
+  - worktree
+  - cleanup
+  - cli
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

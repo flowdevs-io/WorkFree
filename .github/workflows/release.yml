@@ -1,0 +1,62 @@
+name: Release
+
+# Push a tag like v0.1.0 to build native binaries for every platform and attach them to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, os: windows-latest }
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: linux-arm64, os: ubuntu-24.04-arm }
+          - { rid: osx-arm64, os: macos-latest }
+          - { rid: osx-x64, os: macos-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish
+        shell: bash
+        run: |
+          dotnet publish src/WorkFree -c Release -r ${{ matrix.rid }} -o out -p:Version=${GITHUB_REF_NAME#v}
+          dotnet publish src/WorkFree.Gui -c Release -r ${{ matrix.rid }} -o out -p:Version=${GITHUB_REF_NAME#v}
+      # Each archive holds the command-line tool, the desktop app and the native libraries the desktop app loads.
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path out/*.exe, out/*.dll, LICENSE, README.md -DestinationPath workfree-${{ matrix.rid }}.zip
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp LICENSE README.md out/
+          cd out
+          tar -czf ../workfree-${{ matrix.rid }}.tar.gz workfree workfree-gui $(ls *.so *.dylib 2>/dev/null) LICENSE README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: workfree-${{ matrix.rid }}
+          path: workfree-${{ matrix.rid }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - run: sha256sum workfree-* > checksums.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            workfree-*
+            checksums.txt
+          generate_release_notes: true

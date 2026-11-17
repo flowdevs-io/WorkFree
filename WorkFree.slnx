@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WorkFree.Core/WorkFree.Core.csproj" />
+    <Project Path="src/WorkFree.Gui/WorkFree.Gui.csproj" />
+    <Project Path="src/WorkFree/WorkFree.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WorkFree.Tests/WorkFree.Tests.csproj" />
+  </Folder>
+</Solution>

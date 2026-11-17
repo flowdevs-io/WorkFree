@@ -1,0 +1,153 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:WorkFree.Gui"
+        x:Class="WorkFree.Gui.MainWindow"
+        x:DataType="local:MainViewModel"
+        Title="WorkFree" Icon="/Assets/workfree.ico"
+        Width="1120" Height="700" MinWidth="760" MinHeight="420">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.state.clean"><Setter Property="Foreground" Value="#2E9E5B" /></Style>
+    <Style Selector="TextBlock.state.dirty"><Setter Property="Foreground" Value="#C98A00" /></Style>
+    <Style Selector="TextBlock.state.missing"><Setter Property="Foreground" Value="#D64545" /></Style>
+    <Style Selector="TextBlock.state.locked"><Setter Property="Foreground" Value="#3B82C4" /></Style>
+    <Style Selector="TextBlock.cell">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="12,0" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel Margin="16">
+
+    <!-- Title and scan controls -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Image Source="/Assets/workfree.png" Width="44" Height="44" VerticalAlignment="Center" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="WorkFree" FontSize="22" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Summary}" Opacity="0.7" Margin="0,2,0,0" />
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <ComboBox ItemsSource="{Binding SortOptions}" SelectedIndex="{Binding SortIndex}" MinWidth="150" />
+        <Button Content="Add folder..." Click="OnAddFolder" IsEnabled="{Binding IsIdle}" />
+        <Button Content="Rescan" Click="OnRescan" IsEnabled="{Binding IsIdle}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Folders being searched -->
+    <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Roots}" Margin="0,0,0,10" IsVisible="{Binding HasRoots}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="1"
+                  CornerRadius="12" Padding="10,2,4,2" Margin="0,0,6,6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="{Binding}" VerticalAlignment="Center" FontSize="12" />
+              <Button Content="x" Tag="{Binding}" Click="OnRemoveFolder" ToolTip.Tip="Stop searching this folder"
+                      Padding="6,0" MinHeight="0" FontSize="12" Background="Transparent" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Actions and status -->
+    <Grid DockPanel.Dock="Bottom" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+      <TextBlock Text="{Binding SelectionSummary}" VerticalAlignment="Center" FontWeight="SemiBold" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <Button Content="Select all safe" Click="OnSelectSafe" IsEnabled="{Binding IsIdle}"
+                ToolTip.Tip="Select every worktree with no uncommitted changes, plus missing ones" />
+        <Button Content="Clear selection" Click="OnClearSelection" IsEnabled="{Binding IsIdle}" />
+        <Button Content="Prune missing" Click="OnPrune" IsEnabled="{Binding HasMissing}"
+                ToolTip.Tip="Drop git's records of worktrees whose folders are gone" />
+        <Button Content="Delete selected" Classes="danger" Click="OnDelete" IsEnabled="{Binding CanDelete}" />
+      </StackPanel>
+      <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Status}" Margin="0,8,0,0" Opacity="0.8"
+                 TextTrimming="CharacterEllipsis" MinHeight="18" />
+    </Grid>
+
+    <!-- Worktree table with empty states -->
+    <Panel>
+      <DataGrid Name="Grid" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserSortColumns="False"
+                CanUserResizeColumns="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                SelectionMode="Single" IsReadOnly="True" RowHeight="34"
+                BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn Header="" Width="44" CanUserResize="False">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" HorizontalAlignment="Center" MinWidth="0" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Repository" Width="150">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell" Text="{Binding Repo}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Worktree" Width="*">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell" Text="{Binding Path}" ToolTip.Tip="{Binding Path}" TextTrimming="LeadingCharacterEllipsis" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Branch" Width="170">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell" Text="{Binding Branch}" ToolTip.Tip="{Binding Branch}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Size" Width="100">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell" Text="{Binding SizeText}" HorizontalAlignment="Right" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Last active" Width="110">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell" Text="{Binding LastActive}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="State" Width="110">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate x:DataType="local:WorktreeRow">
+                <TextBlock Classes="cell state" Text="{Binding State}" FontWeight="SemiBold"
+                           Classes.clean="{Binding IsClean}" Classes.dirty="{Binding IsDirty}"
+                           Classes.missing="{Binding IsMissing}" Classes.locked="{Binding IsLocked}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+        </DataGrid.Columns>
+      </DataGrid>
+
+      <StackPanel IsVisible="{Binding ShowAddFolderHint}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+        <TextBlock Text="Choose a folder that holds your git repositories" FontSize="16" HorizontalAlignment="Center" />
+        <TextBlock Text="WorkFree will find every worktree beneath it and show how much disk each one uses."
+                   Opacity="0.7" HorizontalAlignment="Center" />
+        <Button Content="Add folder..." Click="OnAddFolder" HorizontalAlignment="Center" />
+      </StackPanel>
+
+      <TextBlock IsVisible="{Binding ShowNothingFound}" Text="No linked worktrees found in these folders."
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" FontSize="15" />
+
+      <!-- The frog: hunts while scanning, eats one fly per removed worktree -->
+      <Border IsVisible="{Binding ShowFrog}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14"
+              Background="#0F1F18" BorderBrush="#2E6B45" BorderThickness="1" CornerRadius="10" Padding="18,10,18,8"
+              BoxShadow="0 6 24 0 #66000000">
+        <TextBlock Name="FrogText" FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,Liberation Mono,monospace"
+                   FontSize="15" FontWeight="Bold" Foreground="#9AA5A0" LineHeight="20" Padding="0,0,0,6" />
+      </Border>
+    </Panel>
+  </DockPanel>
+</Window>
