@@ -2,6 +2,29 @@ using WorkFree.Core;
 
 namespace WorkFree.Tests;
 
+public class ScanCacheTests
+{
+    public ScanCacheTests() => TestConfig.Isolate();
+
+    [Fact]
+    public void Cache_returns_the_last_scan_only_for_the_same_folders()
+    {
+        var a = Path.Combine(Path.GetTempPath(), "wf-cache-a-" + Guid.NewGuid().ToString("N"));
+        var b = Path.Combine(Path.GetTempPath(), "wf-cache-b");
+        ScanCache.Save([a, b], [new Worktree { Path = Path.Combine(a, "one"), RepoName = "app", Exists = true, SizeBytes = 42, DirtyCount = 3 }]);
+
+        var same = ScanCache.Load([b, a]);
+        Assert.NotNull(same);
+        var wt = Assert.Single(same.Worktrees);
+        Assert.Equal(42, wt.SizeBytes);
+        Assert.Equal("dirty (3)", wt.State);
+        Assert.True(DateTimeOffset.Now - same.ScannedAt < TimeSpan.FromMinutes(1));
+
+        Assert.Null(ScanCache.Load([a]));
+        Assert.Null(ScanCache.Load([a, b, "somewhere-else"]));
+    }
+}
+
 public class FrogSceneTests
 {
     private static int Flies(FrogFrame frame) => frame.Kinds.Sum(row => row.Count(c => c == FrogScene.KindFly)) / 3;

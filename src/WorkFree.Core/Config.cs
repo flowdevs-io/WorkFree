@@ -12,6 +12,7 @@ public sealed class Config
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(Config))]
 [JsonSerializable(typeof(List<Worktree>))]
+[JsonSerializable(typeof(ScanSnapshot))]
 public sealed partial class WorkFreeJson : JsonSerializerContext;
 
 public static class ConfigStore

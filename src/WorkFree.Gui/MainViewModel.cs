@@ -63,6 +63,8 @@ public sealed class MainViewModel : Observable
     private bool _showFrog;
     private bool _animating;
     private int _frogVersion;
+    private bool _rescanQueued;
+    private DateTimeOffset? _cachedAt;
 
     public MainViewModel(Func<IReadOnlyList<string>, List<Worktree>>? scan = null)
     {
@@ -85,6 +87,9 @@ public sealed class MainViewModel : Observable
             if (!Set(ref _isBusy, value)) return;
             Raise(nameof(IsIdle));
             Raise(nameof(CanDelete));
+            Raise(nameof(ShowScanning));
+            Raise(nameof(ShowAddFolderHint));
+            Raise(nameof(ShowNothingFound));
         }
     }
 
@@ -147,8 +152,10 @@ public sealed class MainViewModel : Observable
     }
 
     public bool HasRoots => Roots.Count > 0;
-    public bool ShowAddFolderHint => !HasRoots;
+    public bool ShowAddFolderHint => !HasRoots && Rows.Count == 0 && !IsBusy;
     public bool ShowNothingFound => HasRoots && Rows.Count == 0 && !IsBusy;
+    /// <summary>A scan is running and there is nothing to show yet.</summary>
+    public bool ShowScanning => IsBusy && Rows.Count == 0;
     public bool HasMissing => Rows.Any(r => r.IsMissing);
 
     public IEnumerable<WorktreeRow> SelectedRows => Rows.Where(r => r.IsSelected);
@@ -176,29 +183,66 @@ public sealed class MainViewModel : Observable
 
     public async Task ScanAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+        {
+            // The folders changed (or a rescan was asked for) mid-scan: run again when this one ends.
+            _rescanQueued = true;
+            return;
+        }
         if (!HasRoots)
         {
             _all = [];
+            Status = "";
             Rebuild();
             return;
         }
 
         IsBusy = true;
-        Status = "Scanning for worktrees...";
-        Raise(nameof(ShowNothingFound));
         // After a delete the frog is still finishing its meal; leave it alone then.
         var hunting = !ShowFrog;
         if (hunting) BeginFrog(scene => scene.StartSearch());
         try
         {
-            var roots = Roots.ToList();
-            _all = await Task.Run(() => _scan(roots));
-            Status = "";
-        }
-        catch (Exception ex)
-        {
-            Status = "Scan failed: " + ex.Message;
+            do
+            {
+                _rescanQueued = false;
+                var roots = Roots.ToList();
+                if (roots.Count == 0)
+                {
+                    _all = [];
+                    Status = "";
+                    Rebuild();
+                    continue;
+                }
+
+                // First scan of this run: show the previous scan straight away while the real one runs.
+                if (_all.Count == 0 && ScanCache.Load(roots) is { } cached)
+                {
+                    _all = cached.Worktrees;
+                    _cachedAt = cached.ScannedAt;
+                    Rebuild();
+                }
+                Status = _cachedAt is { } at
+                    ? $"Showing the last scan ({Format.Age(at, DateTimeOffset.Now)}). Checking for changes..."
+                    : "Scanning for worktrees...";
+                Raise(nameof(ShowScanning));
+                Raise(nameof(ShowNothingFound));
+
+                try
+                {
+                    var found = await Task.Run(() => _scan(roots));
+                    if (_rescanQueued) continue;
+                    _all = found;
+                    _cachedAt = null;
+                    Status = "";
+                    ScanCache.Save(roots, found);
+                }
+                catch (Exception ex)
+                {
+                    Status = "Scan failed: " + ex.Message;
+                }
+            }
+            while (_rescanQueued);
         }
         finally
         {
@@ -332,6 +376,7 @@ public sealed class MainViewModel : Observable
         Raise(nameof(HasMissing));
         Raise(nameof(ShowNothingFound));
         Raise(nameof(ShowAddFolderHint));
+        Raise(nameof(ShowScanning));
         RaiseSelection();
     }
 

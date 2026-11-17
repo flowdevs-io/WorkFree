@@ -138,6 +138,12 @@
         <Button Content="Add folder..." Click="OnAddFolder" HorizontalAlignment="Center" />
       </StackPanel>
 
+      <StackPanel IsVisible="{Binding ShowScanning}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+        <TextBlock Text="Scanning your folders for worktrees..." FontSize="16" HorizontalAlignment="Center" />
+        <TextBlock Text="Measuring every worktree can take a minute the first time. Next time the last result shows instantly."
+                   Opacity="0.7" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520" />
+      </StackPanel>
+
       <TextBlock IsVisible="{Binding ShowNothingFound}" Text="No linked worktrees found in these folders."
                  HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" FontSize="15" />
 

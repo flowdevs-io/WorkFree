@@ -10,6 +10,8 @@ Worktrees pile up quickly, especially when AI coding agents create one per task.
 
 Run `workfree-gui` (or `workfree gui`) for a window. Add the folder that holds your repositories, tick the worktrees you want gone or press **Select all safe**, then **Delete selected**. It asks before deleting and never removes uncommitted work unless you choose **Force-delete all**. Folders you add are shared with the command-line tool.
 
+The app remembers its last scan, so it opens with that list straight away and checks for changes in the background.
+
 While it works, a small ASCII frog keeps you company: it hops around looking for flies during a scan, then eats one fly for every worktree it removes. The terminal screen shows the same frog.
 
 `workfree-gui` must stay in the same folder as the library files it ships with.

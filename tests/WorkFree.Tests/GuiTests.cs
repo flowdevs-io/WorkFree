@@ -142,6 +142,53 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task Removing_the_folder_during_a_scan_does_not_leave_its_results_behind()
+    {
+        var gate = new TaskCompletionSource<List<Worktree>>();
+        var vm = new MainViewModel(_ => gate.Task.Result);
+        vm.Roots.Clear();
+        var root = "slow-" + Guid.NewGuid().ToString("N");
+        vm.Roots.Add(root);
+
+        var scan = vm.ScanAsync();
+        Assert.True(vm.ShowScanning);
+        Assert.False(vm.ShowAddFolderHint);
+        await vm.RemoveRootAsync(root);
+        gate.SetResult([Wt("late-arrival", 10)]);
+        await scan;
+
+        Assert.Empty(vm.Rows);
+        Assert.True(vm.ShowAddFolderHint);
+        Assert.False(vm.ShowScanning);
+    }
+
+    [Fact]
+    public async Task Next_start_shows_the_last_scan_until_the_new_one_finishes()
+    {
+        var root = "cached-" + Guid.NewGuid().ToString("N");
+        var first = new MainViewModel(_ => [Wt("from-last-time", 500)]);
+        first.Roots.Clear();
+        first.Roots.Add(root);
+        await first.ScanAsync();
+
+        var gate = new TaskCompletionSource<List<Worktree>>();
+        var second = new MainViewModel(_ => gate.Task.Result);
+        second.Roots.Clear();
+        second.Roots.Add(root);
+        var scan = second.ScanAsync();
+
+        Assert.Equal(["from-last-time"], second.Rows.Select(r => r.Name));
+        Assert.Contains("last scan", second.Status);
+        Assert.False(second.CanDelete);
+
+        gate.SetResult([Wt("fresh", 20)]);
+        await scan;
+
+        Assert.Equal(["fresh"], second.Rows.Select(r => r.Name));
+        Assert.Equal("", second.Status);
+    }
+
+    [Fact]
     public async Task Prune_clears_missing_worktrees()
     {
         using var repo = new TempRepo();
