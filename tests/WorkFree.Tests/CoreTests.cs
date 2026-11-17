@@ -231,6 +231,23 @@ public class ScanAndRemoveTests
     }
 
     [Fact]
+    public void Paths_reached_through_a_symlink_count_as_the_same_folder()
+    {
+        using var repo = new TempRepo();
+        var real = repo.AddWorktree("feature-a");
+        var link = Path.Combine(repo.Root, "link-to-root");
+        try { Directory.CreateSymbolicLink(link, repo.Root); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return; } // Windows without symlink rights
+
+        var viaLink = Path.Combine(link, "feature-a");
+
+        Assert.True(PathUtil.Same(viaLink, real));
+        Assert.True(PathUtil.IsUnder(Path.Combine(viaLink, "src"), real));
+        Assert.False(PathUtil.Same(viaLink, repo.Main));
+        Assert.Equal("feature-a", WorktreeScanner.Find(viaLink)?.Branch);
+    }
+
+    [Fact]
     public void Find_matches_only_a_worktree_root()
     {
         using var repo = new TempRepo();
